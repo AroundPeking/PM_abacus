@@ -175,7 +175,7 @@ namespace ModuleIO
         {
             ModuleBase::GlobalFunc::ZEROS(vxc_k_ao.data(), pv->nloc);
             int is = GlobalV::CURRENT_SPIN = kv.isk[ik];
-            dynamic_cast<hamilt::OperatorLCAO<TK, TR>*>(vxcs_op_ao[is])->contributeHk(ik);
+            //dynamic_cast<hamilt::OperatorLCAO<TK, TR>*>(vxcs_op_ao[is])->contributeHk(ik);
 #ifdef __EXX
             if (GlobalC::exx_info.info_global.cal_exx) vexx_op_ao.contributeHk(ik);
             // ======test=======

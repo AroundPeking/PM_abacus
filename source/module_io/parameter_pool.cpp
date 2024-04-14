@@ -1493,6 +1493,14 @@ bool input_parameters_set(std::map<std::string, InputParameter> input_parameters
     {
         INPUT.coulomb_type = static_cast<SimpleString*>(input_parameters["coulomb_type"].get())->c_str();
     }
+    else if (input_parameters.count("pm") != 0)
+    {
+        INPUT.pm = *static_cast<bool*>(input_parameters["pm"].get());
+    }
+    else if (input_parameters.count("pm_epl") != 0)
+    {
+        INPUT.pm_epl = *static_cast<double*>(input_parameters["pm_epl"].get());
+    }
     else if (input_parameters.count("deepks_out_labels") != 0)
     {
         INPUT.deepks_out_labels = *static_cast<bool*>(input_parameters["deepks_out_labels"].get());

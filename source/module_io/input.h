@@ -497,6 +497,12 @@ class Input
     std::string coulomb_type;
 
     //==========================================================
+    //    PM method     Huanjing Gong added on 2024-04
+    //==========================================================
+    bool pm;
+    double pm_epl;
+
+    //==========================================================
     // DeepKS -- added by caoyu and mohan
     //==========================================================
     bool deepks_out_labels; // (need libnpy) prints energy and force labels and descriptors for training, wenfei

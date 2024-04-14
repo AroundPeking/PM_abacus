@@ -45,8 +45,11 @@ template <typename T, typename Tdata> class RPA_LRI
         const K_Vectors& kv);
     void out_for_RPA(const Parallel_Orbitals& parav,
         const psi::Psi<T>& psi,
-        const elecstate::ElecState* pelec);
-    void out_eigen_vector(const Parallel_Orbitals& parav, const psi::Psi<T>& psi);
+        const elecstate::ElecState* pelec,
+	const LCAO_Matrix LM,
+        const bool pm,
+        const double pm_epl);
+    void out_eigen_vector(const Parallel_Orbitals& parav, const psi::Psi<T>& psi, const LCAO_Matrix LM, const bool pm, const double pm_epl);
     void out_struc();
     void out_bands(const elecstate::ElecState *pelec);
 

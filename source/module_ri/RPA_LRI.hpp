@@ -6,6 +6,7 @@
 #ifndef RPA_LRI_HPP
 #define RPA_LRI_HPP
 #include "RPA_LRI.h"
+#include "projector.h"
 
 #include <cstring>
 #include <fstream>
@@ -80,11 +81,14 @@ void RPA_LRI<T, Tdata>::cal_postSCF_exx(const elecstate::DensityMatrix<T, Tdata>
 template <typename T, typename Tdata>
 void RPA_LRI<T, Tdata>::out_for_RPA(const Parallel_Orbitals& parav,
     const psi::Psi<T>& psi,
-    const elecstate::ElecState* pelec)
+    const elecstate::ElecState* pelec,
+    const LCAO_Matrix LM,
+    const bool pm,
+    const double pm_epl)
 {
     ModuleBase::TITLE("DFT_RPA_interface", "out_for_RPA");
     this->out_bands(pelec);
-    this->out_eigen_vector(parav, psi);
+    this->out_eigen_vector(parav, psi, LM, pm, pm_epl);
     this->out_struc();
 
     this->cal_rpa_cv();
@@ -103,7 +107,7 @@ void RPA_LRI<T, Tdata>::out_for_RPA(const Parallel_Orbitals& parav,
 }
 
 template <typename T, typename Tdata>
-void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const psi::Psi<T>& psi)
+void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const psi::Psi<T>& psi, const LCAO_Matrix LM, const bool pm, const double pm_epl)
 {
 
     ModuleBase::TITLE("DFT_RPA_interface", "out_eigen_vector");
@@ -138,6 +142,16 @@ void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const p
 #ifdef __MPI
                 MPI_Allreduce(&tmp[0], &wfc_iks[0], GlobalV::NLOCAL, MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 #endif
+                if (pm)
+                {   
+                    std::vector<std::complex<double>> tmp1 = wfc_iks;
+                    projector<double, double> pj;
+                    pj.get_Sk(&LM);
+                    //get_Tk();
+                    for (int icol = 0; icol < GlobalV::NLOCAL; icol++)
+                        for (int irow = 0; irow < GlobalV::NBANDS; irow++)
+                            wfc_iks[irow] = tmp1[irow];// * Tk[ik, irow, icol];
+                }
                 for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
                     is_wfc_ib_iw[is](ib_global, iw) = wfc_iks[iw];
             } // ib
