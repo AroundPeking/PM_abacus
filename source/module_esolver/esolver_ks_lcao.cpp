@@ -22,6 +22,8 @@
 #ifdef __EXX
 // #include "module_rpa/rpa.h"
 #include "module_ri/RPA_LRI.h"
+#include "module_hamilt_lcao/hamilt_lcaodft/LCAO_hamilt.h"
+#include "module_hamilt_lcao/hamilt_lcaodft/hamilt_lcao.h"
 #endif
 
 #ifdef __DEEPKS
@@ -876,13 +878,22 @@ namespace ModuleESolver
 #ifdef __EXX
     if (INPUT.rpa)
     {
+	const double &sparse_threshold = 1e-10;
         // ModuleRPA::DFT_RPA_interface rpa_interface(GlobalC::exx_info.info_global);
         // rpa_interface.rpa_exx_lcao().info.files_abfs = GlobalV::rpa_orbitals;
         // rpa_interface.out_for_RPA(*(this->LOWF.ParaV), *(this->psi), this->LOC, this->pelec);
         RPA_LRI<TK, double> rpa_lri_double(GlobalC::exx_info.info_ri);
         rpa_lri_double.cal_postSCF_exx(*dynamic_cast<const elecstate::ElecStateLCAO<TK>*>(this->pelec)->get_DM(), MPI_COMM_WORLD, this->kv);
         rpa_lri_double.init(MPI_COMM_WORLD, this->kv);
-        rpa_lri_double.out_for_RPA(*(this->LOWF.ParaV), *(this->psi), this->pelec, this->LM, INPUT.pm, INPUT.pm_epl);
+	
+	//if (this->p_hamilt == nullptr)
+    	//{
+        //	this->p_hamilt = new hamilt::HamiltLCAO<std::complex<double>, std::complex<double>>(this->UHM.genH.LM, this->kv);
+        //	dynamic_cast<hamilt::OperatorLCAO<std::complex<double>, std::complex<double>>*>(this->p_hamilt->ops)->contributeHR();
+    	//}
+	hamilt::Hamilt<std::complex<double>, psi::DEVICE_CPU>* p_ham_lcao = dynamic_cast<hamilt::Hamilt<std::complex<double>, psi::DEVICE_CPU>*>(this->p_hamilt);
+	this->UHM.calculate_SR_sparse(sparse_threshold, p_ham_lcao);
+        rpa_lri_double.out_for_RPA(*(this->LOWF.ParaV), *(this->psi), this->pelec, this->UHM, INPUT.pm, INPUT.pm_epl);
     }
 #endif
 

@@ -82,13 +82,13 @@ template <typename T, typename Tdata>
 void RPA_LRI<T, Tdata>::out_for_RPA(const Parallel_Orbitals& parav,
     const psi::Psi<T>& psi,
     const elecstate::ElecState* pelec,
-    const LCAO_Matrix LM,
+    LCAO_Hamilt& UHM,
     const bool pm,
     const double pm_epl)
 {
     ModuleBase::TITLE("DFT_RPA_interface", "out_for_RPA");
     this->out_bands(pelec);
-    this->out_eigen_vector(parav, psi, LM, pm, pm_epl);
+    this->out_eigen_vector(parav, psi, UHM, pm, pm_epl);
     this->out_struc();
 
     this->cal_rpa_cv();
@@ -107,7 +107,7 @@ void RPA_LRI<T, Tdata>::out_for_RPA(const Parallel_Orbitals& parav,
 }
 
 template <typename T, typename Tdata>
-void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const psi::Psi<T>& psi, const LCAO_Matrix LM, const bool pm, const double pm_epl)
+void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const psi::Psi<T>& psi, LCAO_Hamilt& UHM, const bool pm, const double pm_epl)
 {
 
     ModuleBase::TITLE("DFT_RPA_interface", "out_eigen_vector");
@@ -146,7 +146,7 @@ void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const p
                 {   
                     std::vector<std::complex<double>> tmp1 = wfc_iks;
                     projector<double, double> pj;
-                    pj.get_Sk(&LM);
+                    pj.get_SR(UHM, *(this->p_kv));
                     //get_Tk();
                     for (int icol = 0; icol < GlobalV::NLOCAL; icol++)
                         for (int irow = 0; irow < GlobalV::NBANDS; irow++)

@@ -24,6 +24,8 @@
 
 #include "module_hamilt_lcao/module_deltaspin/spin_constrain.h"
 
+#include <iostream>
+
 namespace ModuleESolver
 {
 
@@ -481,6 +483,12 @@ void ESolver_KS_LCAO<std::complex<double>, std::complex<double>>::get_S()
             = new hamilt::HamiltLCAO<std::complex<double>, std::complex<double>>(this->UHM.genH.LM, this->kv);
         dynamic_cast<hamilt::OperatorLCAO<std::complex<double>, std::complex<double>>*>(this->p_hamilt->ops)
             ->contributeHR();
+    }
+    auto &all_R_coor_ptr = this->UHM.genH.LM->all_R_coor;
+    for (auto &R_coor : all_R_coor_ptr)
+    {
+	    std::cout << "get_S:" << std::endl;
+	    std::cout << R_coor.x << R_coor.y << R_coor.z << std::endl;
     }
     ModuleIO::output_S_R(this->UHM, this->p_hamilt, "SR.csr");
 }
