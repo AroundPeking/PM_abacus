@@ -115,7 +115,16 @@ void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const p
     const int nks_tot = GlobalV::NSPIN == 2 ? p_kv->nks / 2 : p_kv->nks;
     const int npsin_tmp = GlobalV::NSPIN == 2 ? 2 : 1;
     const std::complex<double> zero(0.0, 0.0);
+    std::vector<double> TR;
 
+    TR.resize(GlobalV::NBANDS * GlobalV::NLOCAL, 0.0);
+    if (pm)
+    {   
+        projector<double, double> pj;
+        pj.get_SR(UHM);
+	    pj.diag_S();
+        TR = pj.S2T(pm_epl);
+    }
     for (int ik = 0; ik < nks_tot; ik++)
     {
         std::stringstream ss;
@@ -144,16 +153,22 @@ void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const p
 #endif
                 if (pm)
                 {   
-                    std::vector<std::complex<double>> tmp1 = wfc_iks;
-                    projector<double, double> pj;
-                    pj.get_SR(UHM, *(this->p_kv));
-                    //get_Tk();
-                    for (int icol = 0; icol < GlobalV::NLOCAL; icol++)
-                        for (int irow = 0; irow < GlobalV::NBANDS; irow++)
-                            wfc_iks[irow] = tmp1[irow];// * Tk[ik, irow, icol];
+                    std::vector<std::complex<double>> tmp_cT(GlobalV::NLOCAL, zero);
+                    for (int icol = 0; icol < GlobalV::NLOCAL; ++icol)
+                    {
+                        for (int irow = 0; irow < GlobalV::NBANDS; ++irow)
+                        {
+                            tmp_cT[icol] += wfc_iks[irow] * TR[irow * GlobalV::NBANDS + icol];
+                        }
+                    }
+                    for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
+                        is_wfc_ib_iw[is](ib_global, iw) = tmp_cT[iw];
                 }
-                for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
-                    is_wfc_ib_iw[is](ib_global, iw) = wfc_iks[iw];
+                else
+                {
+                    for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
+                        is_wfc_ib_iw[is](ib_global, iw) = wfc_iks[iw];
+                }
             } // ib
         } // is
         ofs << ik + 1 << std::endl;

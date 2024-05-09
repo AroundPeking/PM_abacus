@@ -6,6 +6,7 @@
 #ifndef PROJECTOR_H
 #define PROJECTOR_H
 
+//get_SR
 #include "module_hamilt_lcao/module_hcontainer/hcontainer.h"
 #include "module_hamilt_lcao/hamilt_lcaodft/hamilt_lcao.h"
 #include "module_hamilt_lcao/hamilt_lcaodft/LCAO_matrix.h"
@@ -13,10 +14,17 @@
 #include "module_base/global_function.h"
 #include "module_base/global_variable.h"
 #include "module_base/parallel_reduce.h"
-#include "module_cell/module_neighbor/sltk_atom_arrange.h"
-#include "module_hamilt_lcao/hamilt_lcaodft/record_adj.h"
-#include "module_basis/module_ao/ORB_control.h"
 
+//diagonalize
+#include "diago_lcao_test.h"
+//#include "module_hsolver/test/diago_elpa_utils.h"
+#include "module_hamilt_general/matrixblock.h"
+#ifdef __ELPA
+#include "module_hsolver/diago_elpa.h"
+#endif
+
+
+// TK is SR
 template <typename TK, typename TR>
 class projector
 {
@@ -24,18 +32,18 @@ public:
     projector(){};
     ~projector()
     {
-        delete SR;
+        //delete SR;
         //delete Tk;
     };
 
-    void get_SR(LCAO_Hamilt& UHM, const K_Vectors& kv_in);
-    //void S2T();
-    //void diagonalize_S(ESolver_KS_LCAO<TK, TR>& esolver);
+    void get_SR(LCAO_Hamilt& UHM);
+    void diag_S();
+    std::vector<double> S2T(const double pm_epl);
 private:
-    hamilt::HContainer<TR>* SR = nullptr;
-    ORB_control orb_con;    //Basis_LCAO
-    Record_adj RA;
-    //HContainer<TR>* Tk = nullptr;
+    HamiltTEST<double> SR;
+    std::vector<double> TR;
+    std::vector<double> eigenvalue;
+    psi::Psi<double> eigenvector;
 };
 
 #include "projector.hpp"
