@@ -116,15 +116,18 @@ void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const p
     const int npsin_tmp = GlobalV::NSPIN == 2 ? 2 : 1;
     const std::complex<double> zero(0.0, 0.0);
     std::vector<double> TR;
-
-    TR.resize(GlobalV::NBANDS * GlobalV::NLOCAL, 0.0);
+    std::vector<std::complex<double>> tmp_pm;
+    
     if (pm)
     {   
+        TR.resize(GlobalV::NBANDS * GlobalV::NLOCAL, 0.0);
+        tmp_pm.resize(GlobalV::NBANDS * GlobalV::NLOCAL, 0.0);
         projector<double, double> pj;
         pj.get_SR(UHM);
 	    pj.diag_S();
         TR = pj.S2T(pm_epl);
     }
+
     for (int ik = 0; ik < nks_tot; ik++)
     {
         std::stringstream ss;
@@ -151,26 +154,52 @@ void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const p
 #ifdef __MPI
                 MPI_Allreduce(&tmp[0], &wfc_iks[0], GlobalV::NLOCAL, MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 #endif
-                if (pm)
-                {   
-                    std::vector<std::complex<double>> tmp_cT(GlobalV::NLOCAL, zero);
-                    for (int icol = 0; icol < GlobalV::NLOCAL; ++icol)
-                    {
-                        for (int irow = 0; irow < GlobalV::NBANDS; ++irow)
-                        {
-                            tmp_cT[icol] += wfc_iks[irow] * TR[irow * GlobalV::NBANDS + icol];
-                        }
-                    }
-                    for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
-                        is_wfc_ib_iw[is](ib_global, iw) = tmp_cT[iw];
-                }
-                else
-                {
-                    for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
-                        is_wfc_ib_iw[is](ib_global, iw) = wfc_iks[iw];
-                }
+                // if (pm)
+                // {   
+                //     std::vector<std::complex<double>> tmp_cT(GlobalV::NLOCAL, zero);
+                //     for (int icol = 0; icol < GlobalV::NLOCAL; ++icol)
+                //     {
+                //         for (int irow = 0; irow < GlobalV::NBANDS; ++irow)
+                //         {
+                //             tmp_cT[icol] += wfc_iks[irow] * TR[irow * GlobalV::NBANDS + icol];
+                //         }
+                //     }
+                //     for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
+                //         is_wfc_ib_iw[is](ib_global, iw) = tmp_cT[iw];
+                // }
+                // else
+                // {
+                //     for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
+                //         is_wfc_ib_iw[is](ib_global, iw) = wfc_iks[iw];
+                // }
+                for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
+                    is_wfc_ib_iw[is](ib_global, iw) = wfc_iks[iw];
             } // ib
+            
+            if  (pm)
+            {
+                for(int iw = 0; iw < GlobalV::NLOCAL; iw++)
+			    {
+			    	for(int ib = 0; ib < GlobalV::NBANDS; ib++)
+			    	{
+                        for (int iu = 0; iu < GlobalV::NBANDS; iu++)
+			    		{
+                            tmp_pm[iw *  GlobalV::NLOCAL + ib] += is_wfc_ib_iw[is](iu, iw) * TR[iu *  GlobalV::NLOCAL + ib];
+                        }
+			    	}
+			    }
+                
+                for(int iw = 0; iw < GlobalV::NLOCAL; iw++)
+			    {
+			    	for(int ib = 0; ib < GlobalV::NBANDS; ib++)
+			    	{
+                        is_wfc_ib_iw[is](ib, iw) = tmp_pm[iw *  GlobalV::NLOCAL + ib];
+                        tmp_pm[iw *  GlobalV::NLOCAL + ib] = 0.0;
+			    	}
+			    }
+            }
         } // is
+
         ofs << ik + 1 << std::endl;
         for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
         {
@@ -183,6 +212,7 @@ void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const p
             }
         }
         ofs.close();
+
     } // ik
     return;
 }
