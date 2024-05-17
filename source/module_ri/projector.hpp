@@ -178,9 +178,9 @@ std::vector<double> projector<TK, TR>::S2T(const double pm_epl)
 				// this->TR[row * nlocal + col] +=  tmp[row * nlocal + ir] * this->eigenvector(0, col, ir);
 				// tmp[row * nlocal + ir] = 0.0;
 			}
-			std::cout << std::fixed << std::setprecision(6) << this->TR[row * nlocal + col] << ",";
+			//std::cout << std::fixed << std::setprecision(6) << this->TR[row * nlocal + col] << ",";
     	}
-		std::cout << std::endl;
+		//std::cout << std::endl;
 	}
 	return this->TR;
 }

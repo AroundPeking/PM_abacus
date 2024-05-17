@@ -49,7 +49,7 @@ template <typename T, typename Tdata> class RPA_LRI
 	LCAO_Hamilt& UHM,
         const bool pm,
         const double pm_epl);
-    void out_eigen_vector(const Parallel_Orbitals& parav, const psi::Psi<T>& psi, LCAO_Hamilt& UHM, const bool pm, const double pm_epl);
+    void out_eigen_vector(const Parallel_Orbitals& parav, const psi::Psi<T>& psi, LCAO_Hamilt& UHM, const bool pm, const double pm_epl, const elecstate::ElecState *pelec);
     void out_struc();
     void out_bands(const elecstate::ElecState *pelec);
 

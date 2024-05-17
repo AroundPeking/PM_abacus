@@ -88,7 +88,7 @@ void RPA_LRI<T, Tdata>::out_for_RPA(const Parallel_Orbitals& parav,
 {
     ModuleBase::TITLE("DFT_RPA_interface", "out_for_RPA");
     this->out_bands(pelec);
-    this->out_eigen_vector(parav, psi, UHM, pm, pm_epl);
+    this->out_eigen_vector(parav, psi, UHM, pm, pm_epl, pelec);
     this->out_struc();
 
     this->cal_rpa_cv();
@@ -107,7 +107,7 @@ void RPA_LRI<T, Tdata>::out_for_RPA(const Parallel_Orbitals& parav,
 }
 
 template <typename T, typename Tdata>
-void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const psi::Psi<T>& psi, LCAO_Hamilt& UHM, const bool pm, const double pm_epl)
+void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const psi::Psi<T>& psi, LCAO_Hamilt& UHM, const bool pm, const double pm_epl, const elecstate::ElecState *pelec)
 {
 
     ModuleBase::TITLE("DFT_RPA_interface", "out_eigen_vector");
@@ -126,6 +126,14 @@ void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const p
         pj.get_SR(UHM);
 	    pj.diag_S();
         TR = pj.S2T(pm_epl);
+        //for(int row = 0; row < GlobalV::NBANDS; ++row)
+        //{	
+    	//    for(int col = 0; col < GlobalV::NBANDS; ++col)
+    	//    {
+        //        std::cout << TR[row * GlobalV::NBANDS + col] << ",";
+        //    }
+        //    std::cout<<std::endl;
+        //}
     }
 
     for (int ik = 0; ik < nks_tot; ik++)
@@ -154,6 +162,7 @@ void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const p
 #ifdef __MPI
                 MPI_Allreduce(&tmp[0], &wfc_iks[0], GlobalV::NLOCAL, MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD);
 #endif
+
                 // if (pm)
                 // {   
                 //     std::vector<std::complex<double>> tmp_cT(GlobalV::NLOCAL, zero);
@@ -176,27 +185,42 @@ void RPA_LRI<T, Tdata>::out_eigen_vector(const Parallel_Orbitals& parav, const p
                     is_wfc_ib_iw[is](ib_global, iw) = wfc_iks[iw];
             } // ib
             
+            //std::cout<<"Before: "<<std::endl;
+            //for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
+            //    std::cout<< std::fixed << std::setprecision(15) <<is_wfc_ib_iw[is](3, iw).real()<<",";
+            //std::cout<<std::endl;
+
             if  (pm)
             {
-                for(int iw = 0; iw < GlobalV::NLOCAL; iw++)
+                for(int ib = 0; ib < GlobalV::NBANDS; ib++)
 			    {
-			    	for(int ib = 0; ib < GlobalV::NBANDS; ib++)
-			    	{
-                        for (int iu = 0; iu < GlobalV::NBANDS; iu++)
-			    		{
-                            tmp_pm[iw *  GlobalV::NLOCAL + ib] += is_wfc_ib_iw[is](iu, iw) * TR[iu *  GlobalV::NLOCAL + ib];
+                    if (pelec->wg(ik + is * nks_tot, ib) * nks_tot != 0.0)//number of occupation
+                    {
+			    	    for(int iw = 0; iw < GlobalV::NLOCAL; iw++)
+			    	    {
+                            for (int iu = 0; iu < GlobalV::NLOCAL; iu++)
+			    		    {
+                                tmp_pm[ib *  GlobalV::NLOCAL + iw] += is_wfc_ib_iw[is](ib, iu) * TR[iu *  GlobalV::NLOCAL + iw];
+                            }
                         }
 			    	}
 			    }
                 
-                for(int iw = 0; iw < GlobalV::NLOCAL; iw++)
+                for(int ib = 0; ib < GlobalV::NBANDS; ib++)
 			    {
-			    	for(int ib = 0; ib < GlobalV::NBANDS; ib++)
-			    	{
-                        is_wfc_ib_iw[is](ib, iw) = tmp_pm[iw *  GlobalV::NLOCAL + ib];
-                        tmp_pm[iw *  GlobalV::NLOCAL + ib] = 0.0;
-			    	}
+                    if (pelec->wg(ik + is * nks_tot, ib) * nks_tot != 0.0)
+                    {
+			    	    for(int iw = 0; iw < GlobalV::NLOCAL; iw++)
+			    	    {
+                            is_wfc_ib_iw[is](ib, iw) = tmp_pm[ib *  GlobalV::NLOCAL + iw];
+                            tmp_pm[ib *  GlobalV::NLOCAL + iw] = 0.0;
+			    	    }
+                    }
 			    }
+                //std::cout<<"After: "<<std::endl;
+                //for (int iw = 0; iw < GlobalV::NLOCAL; iw++)
+                //    std::cout<< std::fixed << std::setprecision(15) << is_wfc_ib_iw[is](3, iw).real()<<",";
+                //std::cout<<std::endl;
             }
         } // is
 
