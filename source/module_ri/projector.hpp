@@ -28,10 +28,10 @@ void projector<TK, TR>::get_SR(LCAO_Hamilt& UHM)
     int nprows, npcols, myprow, mypcol, icontxt;
     int nlocal, nbands, nb2d;
 
-    s.resize(local_size);
-    I.resize(local_size);
-    s_local.resize(local_size);	
-    I_local.resize(local_size);
+    s.resize(local_size, 0.0);
+    I.resize(local_size, 0.0);
+    s_local.resize(local_size, 0.0);	
+    I_local.resize(local_size, 0.0);
     nlocal = GlobalV::NLOCAL;
     nbands = GlobalV::NBANDS;
     nb2d = GlobalV::NB2D;
@@ -51,51 +51,42 @@ void projector<TK, TR>::get_SR(LCAO_Hamilt& UHM)
 
     for (auto &R_coor : all_R_coor_ptr)
     {
-	    if ((R_coor.x == 0) && (R_coor.y == 0) && (R_coor.z == 0))
-	    {
-	        //std::cout << "pm" << std::endl;
-        	//std::cout << R_coor.x << R_coor.y << R_coor.z << std::endl;
-        	auto sR = SR_sparse_ptr[R_coor];
-        	line = new double[GlobalV::NLOCAL];
-        	for(int row = 0; row < GlobalV::NLOCAL; ++row)
-    		{
-        		ModuleBase::GlobalFunc::ZEROS(line, GlobalV::NLOCAL);
-        		auto iter = sR.find(row);
-        		if (iter != sR.end())
-        		{
-            			for (auto &value : iter->second)
-            			{
-                			line[value.first] = value.second;
-            			}
-        		}	
-
-        		Parallel_Reduce::reduce_all(line, GlobalV::NLOCAL);
-
-        		if(GlobalV::DRANK == 0)
-        		{
-            			for (int col = 0; col < GlobalV::NLOCAL; ++col)
-            			{
-                			s[row * GlobalV::NLOCAL + col] = line[col];
-							I[row * GlobalV::NLOCAL + col] = 0.0;
-							if(col == row)
-							{
-								I[row * GlobalV::NLOCAL + col] = 1.0;
-							}
-							//std::cout << std::fixed << std::setprecision(6) << s[row * GlobalV::NLOCAL + col] << ",";
-            			}
-						//std::cout << std::endl;
-        		}
-
-            }
-			LCAO_DIAGO_TEST::distribute_data<double>(s.data(),s_local.data(),nlocal,nb2d,this->SR.nrow,this->SR.ncol,icontxt);
-			LCAO_DIAGO_TEST::distribute_data<double>(I.data(),I_local.data(),nlocal,nb2d,this->SR.nrow,this->SR.ncol,icontxt);
-			MPI_Barrier(MPI_COMM_WORLD);
-			this->SR.s_local = I_local;
-			this->SR.h_local = s_local;
-
-            delete[] line;
-            line = nullptr;
-        } 
+        auto sR = SR_sparse_ptr[R_coor];
+        line = new double[GlobalV::NLOCAL];
+        for(int row = 0; row < GlobalV::NLOCAL; ++row)
+    	{
+        	ModuleBase::GlobalFunc::ZEROS(line, GlobalV::NLOCAL);
+        	auto iter = sR.find(row);
+        	if (iter != sR.end())
+        	{
+        			for (auto &value : iter->second)
+        			{
+            			line[value.first] = value.second;
+        			}
+        	}	
+        	Parallel_Reduce::reduce_all(line, GlobalV::NLOCAL);
+        	if(GlobalV::DRANK == 0)
+        	{
+        			for (int col = 0; col < GlobalV::NLOCAL; ++col)
+        			{
+            			s[row * GlobalV::NLOCAL + col] += line[col];
+						I[row * GlobalV::NLOCAL + col] = 0.0;
+						if(col == row)
+						{
+							I[row * GlobalV::NLOCAL + col] = 1.0;
+						}
+						//std::cout << std::fixed << std::setprecision(6) << s[row *GlobalV::NLOCAL + col] << ",";
+        			}
+					//std::cout << std::endl;
+        	}
+        }
+		LCAO_DIAGO_TEST::distribute_data<double>(s.data(),s_local.data(),nlocal,nb2d, this->SR.nrow,this->SR.ncol,icontxt);
+		LCAO_DIAGO_TEST::distribute_data<double>(I.data(),I_local.data(),nlocal,nb2d, this->SR.nrow,this->SR.ncol,icontxt);
+		MPI_Barrier(MPI_COMM_WORLD);
+		this->SR.s_local = I_local;
+		this->SR.h_local = s_local;
+        delete[] line;
+        line = nullptr; 
     }
     //ModuleBase::QUIT();
 }
